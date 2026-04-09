@@ -4,14 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>计量证书查询</title>
+    <!-- Tailwind CSS v3 -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- QR Code Library -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        brandBlue: '#2b66e3',
+                        brandBlue: '#2b66e3', // 根据图片调整的蓝色
                         textGrey: '#9ca3af',
                         inputBg: '#ffffff'
                     }
@@ -35,24 +37,34 @@
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
     <div class="max-w-md w-full bg-white shadow-2xl rounded-[2.5rem] overflow-hidden relative border-t-8 border-brandBlue">
+        
+        <!-- 头部蓝色区域 -->
         <div class="bg-white py-8 px-6 text-center">
             <h1 class="text-2xl font-bold tracking-wider mb-1 text-slate-800 uppercase">证书在线验证</h1>
             <p class="text-brandBlue text-[10px] font-bold mt-1 tracking-widest uppercase">METROLOGY AUTHENTICATION SYSTEM</p>
         </div>
+        
+        <!-- 查询主体 -->
         <div id="searchView" class="p-8 pb-12 text-center">
             <p class="text-textGrey text-sm mb-10">请输入证书编号进行防伪查询</p>
+            
             <div class="relative mb-8">
                 <input type="text" id="certNoInput" placeholder="请输入编号" 
                        class="w-full p-5 bg-white border border-gray-100 rounded-2xl uppercase outline-none focus:ring-2 focus:ring-brandBlue/20 text-center text-xl font-bold shadow-sm placeholder:text-gray-300 transition-all">
             </div>
+            
             <button onclick="handleQuery()" class="w-full bg-brandBlue hover:bg-blue-700 text-white py-5 rounded-2xl font-bold text-lg shadow-lg shadow-blue-200 active:scale-95 transition-all tracking-widest uppercase">
                 开始核验
             </button>
         </div>
+
+        <!-- 结果展示区 (隐藏) -->
         <div id="resBox" class="p-8 hidden">
             <div class="bg-blue-50/50 rounded-[2rem] p-6 border border-blue-100 space-y-4" id="resItems"></div>
             <button onclick="location.reload()" class="w-full mt-8 bg-gray-800 text-white py-4 rounded-2xl font-bold text-sm">返回重新查询</button>
         </div>
+
+        <!-- 错误提示区 (隐藏) -->
         <div id="errBox" class="p-8 hidden text-center">
             <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -61,16 +73,23 @@
             <p class="text-slate-400 text-xs mt-2">证书编号未找到，请核对后再试</p>
             <button onclick="location.reload()" class="mt-8 text-brandBlue font-bold border-b-2 border-brandBlue pb-1">返回重新输入</button>
         </div>
+
+        <!-- 页脚区域 -->
         <div class="pt-6 pb-10 border-t border-gray-100 text-center relative">
             <div class="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-white border border-gray-100 rounded-full flex items-center justify-center">
                 <div class="w-1 h-1 bg-gray-100 rounded-full"></div>
             </div>
+            
+            <!-- 二维码 -->
             <div id="qrcodeContainer" class="hidden mb-4">
                 <div id="qrcode" class="inline-block p-2 bg-white rounded-xl border border-gray-100 shadow-sm"></div>
             </div>
+
             <p class="text-textGrey text-[9px] font-bold tracking-[0.2em] uppercase mt-4">METROLOGY VERIFICATION SYSTEM</p>
         </div>
     </div>
+
+    <!-- 核心数据脚本 -->
     <script src="data.js"></script>
     <script>
         const FIELDS = {
@@ -78,34 +97,41 @@
             manufacturer: '制造厂家', calibrationDate: '执行日期', expiryDate: '有效期至',
             factoryNumber: '出厂编号', model: '规格型号'
         };
+
         function handleQuery() {
             const val = document.getElementById('certNoInput').value.trim().toUpperCase();
             if(!val) return alert("请输入证书编号");
+            
             const db = window.certData || {};
             const certs = db.certs || db;
             const config = db.config || {};
             const data = certs[val];
+
             if(data) {
                 const reportType = data.reportType || '校准';
                 const dateLabel = reportType === '检定' ? '检定日期' : '校准日期';
+
+                // 剧中靠左对齐：固定标签宽度，值紧随其后，全部统一为黑色字体
                 let html = `
                     <div class="flex items-center border-b border-blue-100 pb-4 mb-4 font-black text-base text-black">
                         <span class="w-24 shrink-0 text-slate-400 text-sm font-normal">证书编号</span>
-                        <span class="font-mono ml-4 text-black text-left font-bold">${val}</span>
+                        <span class="font-mono ml-4 text-black">\${val}</span>
                     </div>
                     <div class="flex items-start border-b border-blue-50/50 py-3 text-sm font-medium text-black text-left">
                         <span class="w-24 shrink-0 text-slate-400">报告类型</span>
-                        <span class="ml-4 break-all text-black">${reportType}</span>
+                        <span class="ml-4 break-all text-black">\${reportType}</span>
                     </div>
                 `;
+                
                 for(let k in FIELDS) {
                     if(config[k] !== false) {
                         let label = FIELDS[k];
-                        if (k === 'calibrationDate') label = dateLabel;
+                        if (k === 'calibrationDate') label = dateLabel; // 动态切换标签
+
                         html += `
                             <div class="flex items-start border-b border-blue-50/50 py-3 text-sm font-medium text-black text-left">
-                                <span class="w-24 shrink-0 text-slate-400">${label}</span>
-                                <span class="ml-4 break-all text-black">${data[k] || '-'}</span>
+                                <span class="w-24 shrink-0 text-slate-400">\${label}</span>
+                                <span class="ml-4 break-all text-black">\${data[k] || '-'}</span>
                             </div>
                         `;
                     }
@@ -113,6 +139,8 @@
                 document.getElementById('resItems').innerHTML = html;
                 document.getElementById('searchView').classList.add('hidden');
                 document.getElementById('resBox').classList.remove('hidden');
+                
+                // 显示二维码
                 document.getElementById('qrcodeContainer').classList.remove('hidden');
                 QRCode.toCanvas(document.getElementById('qrcode'), window.location.href, { width: 100, margin: 0, color: { dark: '#2b66e3' } });
             } else {
